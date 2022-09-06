@@ -108,7 +108,6 @@ def main():
     if not(os.path.exists(logdir)):
         os.makedirs(logdir)
 
-
     ###################
     ### RUN TRAINING
     ###################
