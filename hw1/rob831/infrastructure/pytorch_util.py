@@ -5,7 +5,6 @@ from torch import nn
 
 Activation = Union[str, nn.Module]
 
-
 _str_to_activation = {
     'relu': nn.ReLU(),
     'tanh': nn.Tanh(),
@@ -15,7 +14,6 @@ _str_to_activation = {
     'softplus': nn.Softplus(),
     'identity': nn.Identity(),
 }
-
 
 def build_mlp(
         input_size: int,
@@ -47,11 +45,24 @@ def build_mlp(
 
     # TODO: return a MLP. This should be an instance of nn.Module  [OK]
     # Note: nn.Sequential is an instance of nn.Module.
-    raise NotImplementedError
+    modules = []
+    modules.append(nn.Linear(input_size, size))
+
+    # Append for each hidden layer
+    for hidden_layer in range(n_layers):
+        # For each hidden layer, have a linear layer to transform then apply the non-linear activation
+        modules.append(nn.Linear(size, size))
+        modules.append(activation)
+
+    # Transform the number of features from the size of the hidden layer to the output layer then apply a nonlinear activation
+    modules.append(nn.Linear(size, output_size))
+    modules.append(output_activation)
+
+    # Return a feedforward network of all the modules
+    return nn.Sequential(*modules)
 
 
 device = None
-
 
 def init_gpu(use_gpu=True, gpu_id=0):
     global device

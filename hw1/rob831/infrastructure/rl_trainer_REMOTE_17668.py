@@ -12,7 +12,7 @@ from rob831.infrastructure import utils
 
 # how many rollouts to save as videos to tensorboard
 MAX_NVIDEO = 2
-# MAX_VIDEO_LEN = 40  # we overwrite this in the code below
+MAX_VIDEO_LEN = 40  # we overwrite this in the code below
 
 
 def make_env(env_name):
@@ -53,8 +53,7 @@ class RL_Trainer(object):
 
         # Maximum length for episodes
         self.params['ep_len'] = self.params['ep_len'] or self.env.spec.max_episode_steps
-        # self.MAX_VIDEO_LEN = self.params['ep_len']
-        self.MAX_VIDEO_LEN = 40
+        MAX_VIDEO_LEN = self.params['ep_len']
 
         # Is this env continuous, or self.discrete?
         discrete = isinstance(self.env.action_space, gym.spaces.Discrete)
@@ -187,7 +186,7 @@ class RL_Trainer(object):
         train_video_paths = None
         if self.log_video:
             print('\nCollecting train rollouts to be used for saving videos...')
-            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, self.MAX_VIDEO_LEN, True)
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
 
         return paths, envsteps_this_batch, train_video_paths
 
@@ -228,7 +227,7 @@ class RL_Trainer(object):
         # save eval rollouts as videos in tensorboard event file
         if self.log_video and train_video_paths != None:
             print('\nCollecting video rollouts eval')
-            eval_video_paths = utils.sample_n_trajectories(self.env, eval_policy, MAX_NVIDEO, self.MAX_VIDEO_LEN, True)
+            eval_video_paths = utils.sample_n_trajectories(self.env, eval_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
 
             #save train/eval videos
             print('\nSaving train rollouts as videos...')

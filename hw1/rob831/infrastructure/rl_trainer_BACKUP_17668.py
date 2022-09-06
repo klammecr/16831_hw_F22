@@ -187,7 +187,12 @@ class RL_Trainer(object):
         train_video_paths = None
         if self.log_video:
             print('\nCollecting train rollouts to be used for saving videos...')
+<<<<<<< HEAD
+            ## TODO look in utils and implement sample_n_trajectories
             train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, self.MAX_VIDEO_LEN, True)
+=======
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
+>>>>>>> First effort working through HW1 for behavior cloning
 
         return paths, envsteps_this_batch, train_video_paths
 

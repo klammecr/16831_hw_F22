@@ -14,14 +14,14 @@ class BC_Trainer(object):
         #######################
 
         agent_params = {
-            'n_layers': params['n_layers'],
-            'size': params['size'],
-            'learning_rate': params['learning_rate'],
+            'n_layers':               params['n_layers'],
+            'size':                   params['size'],
+            'learning_rate':          params['learning_rate'],
             'max_replay_buffer_size': params['max_replay_buffer_size'],
             }
 
         self.params = params
-        self.params['agent_class'] = BCAgent ## HW1: you will modify this
+        self.params['agent_class']  = BCAgent ## HW1: you will modify this
         self.params['agent_params'] = agent_params
 
         ################
