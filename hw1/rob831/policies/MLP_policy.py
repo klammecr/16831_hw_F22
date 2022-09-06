@@ -28,7 +28,7 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
                  ):
         super().__init__(**kwargs)
 
-        # init vars
+        # Init vars
         self.ac_dim = ac_dim
         self.ob_dim = ob_dim
         self.n_layers = n_layers
@@ -38,32 +38,30 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
         self.training = training
         self.nn_baseline = nn_baseline
 
+        # Build the neural net and move to the correct device
+        self.net = ptu.build_mlp(
+            input_size=self.ob_dim,
+            output_size=self.ac_dim,
+            n_layers=self.n_layers,
+            size=self.size,
+        )
+        self.net.to(ptu.device)
+
+        # Change logging/optimization based on if the TODO:? is discrete or continuous
         if self.discrete:
-            self.logits_na = ptu.build_mlp(
-                input_size=self.ob_dim,
-                output_size=self.ac_dim,
-                n_layers=self.n_layers,
-                size=self.size,
-            )
-            self.logits_na.to(ptu.device)
-            self.mean_net = None
-            self.logstd = None
-            self.optimizer = optim.Adam(self.logits_na.parameters(),
+            # Optimize parameters using the Adam optimizer
+            self.optimizer = optim.Adam(self.net.parameters(),
                                         self.learning_rate)
         else:
-            self.logits_na = None
-            self.mean_net = ptu.build_mlp(
-                input_size=self.ob_dim,
-                output_size=self.ac_dim,
-                n_layers=self.n_layers, size=self.size,
-            )
-            self.mean_net.to(ptu.device)
             self.logstd = nn.Parameter(
                 torch.zeros(self.ac_dim, dtype=torch.float32, device=ptu.device)
             )
             self.logstd.to(ptu.device)
+            # Optimize the parameters using the Adam optimizer
+            # TODO: Is this comment accurate?
+            # Chain the standard deviation to log when the params are updated
             self.optimizer = optim.Adam(
-                itertools.chain([self.logstd], self.mean_net.parameters()),
+                itertools.chain([self.logstd], self.net.parameters()),
                 self.learning_rate
             )
 
@@ -92,13 +90,18 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # return more flexible objects, such as a
     # `torch.distributions.Distribution` object. It's up to you!
     def forward(self, observation: torch.FloatTensor) -> Any:
-        return torch.distributions.LogisticNormal()
+        return self.net(observation)
 
 
 #####################################################
 #####################################################
 
 class MLPPolicySL(MLPPolicy):
+    """Multilayer Perceptron Policy for Supervised Learning
+
+    Args:
+        MLPPolicy (MLPolicy): The base class 
+    """
     def __init__(self, ac_dim, ob_dim, n_layers, size, **kwargs):
         super().__init__(ac_dim, ob_dim, n_layers, size, **kwargs)
         self.loss = nn.MSELoss()
@@ -108,7 +111,9 @@ class MLPPolicySL(MLPPolicy):
             adv_n=None, acs_labels_na=None, qvals=None
     ):
         # TODO: update the policy and return the loss
-        loss = TODO
+        # Find the action for each observation then compute the loss over all the actions
+        pred_actions = [self.get_action(observation) for observation in observations]
+        loss = self.loss.forward(pred_actions, actions)
 
         return {
             # You can add extra logging information here, but keep this line
