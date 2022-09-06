@@ -7,7 +7,9 @@ import time
 def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('rgb_array')):
 
     # initialize env for the beginning of a new rollout
-    ob = TODO  # HINT: should be the output of resetting the env [OK]
+
+    # Reset the environment to the initial state
+    ob = env.reset()
 
     # init vars
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
@@ -27,7 +29,7 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
 
         # use the most recent ob to decide what to do
         obs.append(ob)
-        ac = TODO # HINT: query the policy's get_action function [OK]
+        ac = policy.get_action(obs) # Access the policy and get an action given the state/obserbation
         ac = ac[0]
         acs.append(ac)
 
@@ -39,9 +41,11 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
         next_obs.append(ob)
         rewards.append(rew)
 
-        # TODO end the rollout if the rollout ended
-        # HINT: rollout can end due to done, or due to max_path_length
-        rollout_done = TODO  # HINT: this is either 0 or 1
+        # Rollout can end due to done, or due to max_path_length
+        rollout_done = False
+        if steps >= max_path_length or done:
+            rollout_done = True
+            
         terminals.append(rollout_done)
 
         if rollout_done:
@@ -53,6 +57,11 @@ def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, r
     """
         Collect rollouts until we have collected min_timesteps_per_batch steps.
 
+        :param env:
+        :param policy:
+        :param min_timesteps_per_batch:  Minimum number of samples per batch. That is, how many state action pairs make up a single training batch
+        :param max_path_length:          How many state action pairs make up a roll-out
+
         TODO implement this function
         Hint1: use sample_trajectory to get each path (i.e. rollout) that goes into paths
         Hint2: use get_pathlength to count the timesteps collected in each path
@@ -60,8 +69,14 @@ def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, r
     timesteps_this_batch = 0
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
+        path     = sample_trajectory(env, policy, max_path_length, render, render_mode)
+        path_len = get_pathlength(path)
 
-        TODO
+        # Update the number of timesteps collected in this path
+        timesteps_this_batch += path_len
+
+        # Append a sample trajectory for each timestep
+        paths.append(path)
 
     return paths, timesteps_this_batch
 
@@ -74,7 +89,9 @@ def sample_n_trajectories(env, policy, ntraj, max_path_length, render=False, ren
     """
     paths = []
 
-    TODO
+    # Get n trajectories each of which have their own path
+    for _ in range(ntraj):
+        paths.append(sample_trajectory(env, policy, max_path_length, render, render_mode))
 
     return paths
 
@@ -117,4 +134,3 @@ def convert_listofrollouts(paths, concat_rew=True):
 
 def get_pathlength(path):
     return len(path["reward"])
-
