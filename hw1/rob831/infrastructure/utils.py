@@ -62,7 +62,6 @@ def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, r
         :param min_timesteps_per_batch:  Minimum number of samples per batch. That is, how many state action pairs make up a single training batch
         :param max_path_length:          How many state action pairs make up a roll-out
 
-        TODO implement this function
         Hint1: use sample_trajectory to get each path (i.e. rollout) that goes into paths
         Hint2: use get_pathlength to count the timesteps collected in each path
     """
@@ -84,7 +83,6 @@ def sample_n_trajectories(env, policy, ntraj, max_path_length, render=False, ren
     """
         Collect ntraj rollouts.
 
-        TODO implement this function
         Hint1: use sample_trajectory to get each path (i.e. rollout) that goes into paths
     """
     paths = []
