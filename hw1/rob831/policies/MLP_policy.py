@@ -92,7 +92,6 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     def forward(self, observation: torch.FloatTensor) -> Any:
         return self.net(observation)
 
-
 #####################################################
 #####################################################
 
@@ -112,8 +111,13 @@ class MLPPolicySL(MLPPolicy):
     ):
         # TODO: update the policy and return the loss
         # Find the action for each observation then compute the loss over all the actions
-        pred_actions = [self.get_action(observation) for observation in observations]
-        loss = self.loss.forward(pred_actions, actions)
+        pred_actions = torch.stack([self.get_action(torch.Tensor(observation)) for observation in observations])
+        loss = self.loss.forward(pred_actions.resize(pred_actions.shape[0], pred_actions.shape[2]), torch.Tensor(actions))
+
+        # Backpropegate the loss and update the parameters of the network
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         return {
             # You can add extra logging information here, but keep this line
