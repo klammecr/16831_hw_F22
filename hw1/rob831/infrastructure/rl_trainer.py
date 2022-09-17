@@ -154,10 +154,10 @@ class RL_Trainer(object):
             batch_size,
     ):
         """
-        :param itr:
-        :param load_initial_expertdata:  path to expert data pkl file
-        :param collect_policy:  the current policy using which we collect data
-        :param batch_size:  the number of transitions we collect
+        :param itr:                      What iteration are we on
+        :param load_initial_expertdata:  Path to expert data pkl file
+        :param collect_policy:           The current policy using which we collect data
+        :param batch_size:               The number of transitions we collect
         :return:
             paths: a list trajectories
             envsteps_this_batch: the sum over the numbers of environment steps in paths

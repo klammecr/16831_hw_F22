@@ -5,13 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Vanilla Behavior Cloning",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--expert_policy_file", " rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "bc_ant", "--n_iter", "1", "--expert_data" , "rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1"],
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "bc_ant", "--n_iter", "1", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1"],
             "justMyCode": true
+        },
+        {
+            "name": "DAgger",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "dagger_ant", "--n_iter", "10", "--do_dagger", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1"]
         }
     ]
 }

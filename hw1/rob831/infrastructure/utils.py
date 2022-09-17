@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import torch
 
 ############################################
 ############################################
@@ -29,12 +30,12 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
 
         # use the most recent ob to decide what to do
         obs.append(ob)
-        ac = policy.get_action(obs) # Access the policy and get an action given the state/obserbation
+        ac = policy.get_action(torch.tensor(ob).float()) # Access the policy and get an action given the state/obserbation
         ac = ac[0]
         acs.append(ac)
 
         # take that action and record results
-        ob, rew, done, _ = env.step(ac)
+        ob, rew, done, _ = env.step(ac.detach().numpy())
 
         # record result of taking that action
         steps += 1
@@ -106,7 +107,7 @@ def Path(obs, image_obs, acs, rewards, next_obs, terminals):
     return {"observation" : np.array(obs, dtype=np.float32),
             "image_obs" : np.array(image_obs, dtype=np.uint8),
             "reward" : np.array(rewards, dtype=np.float32),
-            "action" : np.array(acs, dtype=np.float32),
+            "action" : np.array(torch.stack(acs).detach().numpy(), dtype=np.float32),
             "next_observation": np.array(next_obs, dtype=np.float32),
             "terminal": np.array(terminals, dtype=np.float32)}
 
