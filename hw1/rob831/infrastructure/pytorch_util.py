@@ -47,9 +47,10 @@ def build_mlp(
     # Note: nn.Sequential is an instance of nn.Module.
     modules = []
     modules.append(nn.Linear(input_size, size))
+    modules.append(activation)
 
     # Append for each hidden layer
-    for hidden_layer in range(n_layers):
+    for hidden_layer in range(n_layers - 1):
         # For each hidden layer, have a linear layer to transform then apply the non-linear activation
         modules.append(nn.Linear(size, size))
         modules.append(activation)
