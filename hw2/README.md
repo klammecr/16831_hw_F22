@@ -17,8 +17,8 @@ The following files have blanks to be filled with your solutions from homework 1
 
 You will then need to complete the following new files for homework 2. The relevant sections are marked with "TODO".
 - [agents/pg_agent.py](rob831/agents/pg_agent.py)
-- [policies/MLP_policy.py](rob831/policies/MLP_policy)
+- [policies/MLP_policy.py](rob831/policies/MLP_policy.py)
 
-You will also want to look through [scripts/run_hw2.py](rob831/scripts/run_hw2.py) (if running locally) or [scripts/run_hw2.ipynb](cs285/scripts/run_hw1.2pynb) (if running on Colab), though you will not need to edit this files beyond changing runtime arguments in the Colab notebook.
+You will also want to look through [scripts/run_hw2.py](rob831/scripts/run_hw2.py) (if running locally) or [scripts/run_hw2.ipynb](rob831/scripts/run_hw2.ipynb) (if running on Colab), though you will not need to edit this files beyond changing runtime arguments in the Colab notebook.
 
 You will be running your policy gradients implementation in five experiments total, investigating the effects of design decisions like reward-to-go estimators, neural network baselines and generalized advantage estimation for variance reduction, and advantage normalization. See the assignment PDF for more details.
