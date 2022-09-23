@@ -111,6 +111,12 @@ def main():
     ###################
     ### RUN TRAINING
     ###################
+    # Hyperparameter runs
+    # for network_size in range(32,256,32):
+    #     print(network_size)
+    #     params["size"] = network_size
+    #     trainer = BC_Trainer(params)
+    #     trainer.run_training_loop()
 
     trainer = BC_Trainer(params)
     trainer.run_training_loop()

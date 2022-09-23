@@ -5,21 +5,47 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Vanilla Behavior Cloning",
+            "name": "Vanilla Behavior Cloning Ant",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "bc_ant", "--n_iter", "1", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1"],
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "bc_ant", "--n_iter", "1", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1", "--seed", "6868", "--eval_batch_size", "10000"],
             "justMyCode": true
         },
         {
-            "name": "DAgger",
+            "name": "Vanilla Behavior Cloning Walker 2D",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "dagger_ant", "--n_iter", "10", "--do_dagger", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1"]
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Walker2d.pkl", "--env_name", "Walker2d-v4", "--exp_name", "bc_walker", "--n_iter", "1", "--expert_data" , "hw1/rob831/expert_data/expert_data_Walker2d-v4.pkl", "--video_log_freq",  "-1","--seed", "6868", "--eval_batch_size", "10000"],
+            "justMyCode": true
+        },
+        {
+            "name": "DAgger Default Ant",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "dagger_ant", "--n_iter", "10", "--do_dagger", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1", "--seed", "6868", "--eval_batch_size", "10000"]
+        },
+        {
+            "name": "DAgger Walker 2D",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Walker2d.pkl", "--env_name", "Walker2d-v4", "--exp_name", "bc_walker", "--n_iter", "10", "--do_dagger", "--expert_data" , "hw1/rob831/expert_data/expert_data_Walker2d-v4.pkl", "--video_log_freq",  "-1","--seed", "6868", "--eval_batch_size", "10000"],
+            "justMyCode": true
+        },
+        {
+            "name": "DAgger Chosen Hyperparameters",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--expert_policy_file", "hw1/rob831/policies/experts/Ant.pkl", "--env_name", "Ant-v4", "--exp_name", "dagger_ant", "--n_iter", "10", "--do_dagger", "--expert_data" , "hw1/rob831/expert_data/expert_data_Ant-v4.pkl", "--video_log_freq",  "-1", "--n_layers", "4", "--eval_batch_size", "10000"]
         }
     ]
 }
