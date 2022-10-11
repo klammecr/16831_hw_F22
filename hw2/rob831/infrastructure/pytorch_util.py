@@ -80,4 +80,8 @@ def from_numpy(*args, **kwargs):
 
 
 def to_numpy(tensor):
-    return tensor.to('cpu').detach().numpy()
+    try:
+        ret = tensor.to('cpu').detach().numpy()
+    except:
+        ret = tensor.sample().to('cpu').detach().numpy()
+    return ret

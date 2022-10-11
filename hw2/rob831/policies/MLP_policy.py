@@ -3,6 +3,7 @@ import itertools
 from torch import nn
 from torch.nn import functional as F
 from torch import optim
+from torch.autograd import Variable
 
 import numpy as np
 import torch
@@ -87,7 +88,7 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
     # query the policy with observation(s) to get selected action(s)
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        output = self.forward(ptu.from_numpy(observation))
+        output = self.forward(ptu.from_numpy(obs))
         return ptu.to_numpy(output)
 
     # update/train this policy
@@ -125,33 +126,49 @@ class MLPPolicyPG(MLPPolicy):
         super().__init__(ac_dim, ob_dim, n_layers, size, **kwargs)
         self.baseline_loss = nn.MSELoss()
 
-    def update(self, observations, actions, advantages, q_values=None):
+    def update(self, observations, actions, advantages, num_traj, q_values=None):
+        # Convert to tensors
         observations = ptu.from_numpy(observations)
-        actions = ptu.from_numpy(actions)
-        advantages = ptu.from_numpy(advantages)
+        actions      = ptu.from_numpy(actions)
+        advantages   = ptu.from_numpy(advantages)
 
-        # TODO: update the policy using policy gradient
-        # HINT1: Recall that the expression that we want to MAXIMIZE
-            # is the expectation over collected trajectories of:
-            # sum_{t=0}^{T-1} [grad [log pi(a_t|s_t) * (Q_t - b_t)]]
-        # HINT2: you will want to use the `log_prob` method on the distribution returned
-            # by the `forward` method
-        # HINT3: don't forget that `optimizer.step()` MINIMIZES a loss
-        # HINT4: use self.optimizer to optimize the loss. Remember to
-            # 'zero_grad' first
+        # Calculate the loss
+        policy_loss = 0
 
-        raise NotImplementedError
+        # Forward pass, get the distribution of action prob.
+        act_prob_dist = self.forward(observations)
+
+        # Get the log probability for that action
+        log_prob_act = act_prob_dist.log_prob(actions)
+
+        # Find the loss for the actions, find the negative because we are minimizing the negative log
+        policy_loss = Variable(torch.sum(-log_prob_act.detach() * advantages) / num_traj, requires_grad = True)
+
+        # Clear out accumulated gradients
+        self.optimizer.zero_grad()
+
+        # Backpropegate the loss
+        policy_loss.backward()
+
+        # Take an optimization step
+        self.optimizer.step()
 
         if self.nn_baseline:
-            ## TODO: update the neural network baseline using the q_values as
+            ## update the neural network baseline using the q_values as
             ## targets. The q_values should first be normalized to have a mean
             ## of zero and a standard deviation of one.
+            targets = ptu.from_numpy(q_values)
 
-            ## HINT1: use self.baseline_optimizer to optimize the loss used for
-                ## updating the baseline. Remember to 'zero_grad' first
-            ## HINT2: You will need to convert the targets into a tensor using
-                ## ptu.from_numpy before using it in the loss
-            raise NotImplementedError
+            # Normalize the q values
+            targets = (targets - torch.mean(targets)) / torch.std(targets)
+
+            # Calculate the loss by sampling from the network and comparing it to the Q value
+            loss_baseline = self.baseline_loss.forward(self.baseline.forward(observations).ravel(), targets)
+
+            # Backpropegate the loss and update the parameters
+            self.baseline_optimizer.zero_grad()
+            loss_baseline.backward()
+            self.baseline_optimizer.step()
 
         train_log = {
             'Training Loss': ptu.to_numpy(policy_loss),
