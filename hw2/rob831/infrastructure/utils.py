@@ -71,12 +71,14 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
             if 'human' in render_mode:
                 env.render(mode=render_mode)
                 time.sleep(env.model.opt.timestep)
+        if len(ob) == 2:
+            ob = ob[0]
         obs.append(ob)
         ac = policy.get_action(ob)
         if ac.shape:
             ac = ac[0]
         acs.append(ac)
-        ob, rew, done, _ = env.step(ac)
+        ob, rew, done, _, _ = env.step(ac)
         # add the observation after taking a step to next_obs
         next_obs.append(ob)
         rewards.append(rew)

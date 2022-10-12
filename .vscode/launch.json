@@ -57,6 +57,14 @@
             "args": ["--env_name", "CartPole-v0", "-n", "100", "-b", "1000", "-dsa", "--exp_name", "q1_sb_no_rtg_dsa"]           
         },
         {
+            "name": "CartPole HW2: RTG",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--env_name", "CartPole-v0", "-n", "100", "-b", "1000", "-dsa", "-rtg", "--exp_name", "q1_sb_rtg_na"]           
+        },        
+        {
             "name": "Lunar Lander HW2",
             "type": "python",
             "request": "launch",

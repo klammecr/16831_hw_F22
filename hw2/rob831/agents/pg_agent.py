@@ -1,3 +1,4 @@
+from copy import copy
 import numpy as np
 
 from rob831.agents.base_agent import BaseAgent
@@ -150,7 +151,15 @@ class PGAgent(BaseAgent):
             Output: list where each index t contains sum_{t'=0}^T gamma^t' r_{t'}
         """
         gamma_arr = np.array([self.gamma ** i for i in range(len(rewards))])
-        return rewards * gamma_arr
+        # This is just the discounted sum of rewards
+        return np.repeat(np.sum(rewards * gamma_arr), len(rewards))
+
+
+    def compute_gamma_arr(self, length):
+        """
+        Precomute the vectorized gamma array for each different possible starting point t
+        """
+
 
 
     def _discounted_cumsum(self, rewards):
@@ -159,8 +168,15 @@ class PGAgent(BaseAgent):
             -takes a list of rewards {r_0, r_1, ..., r_t', ... r_T},
             -and returns a list where the entry in each index t' is sum_{t'=t}^T gamma^(t'-t) * r_{t'}
         """
-        discounted_return = self._discounted_return(rewards)
-        # Calculate the reward to go, reverse then compute the cumulative sum for RTG then re reverse it to put it back in line with time
-        list_of_discounted_cumsums = discounted_return[::-1].cumsum()[::-1]
+        # This one is a bit different, each index t' should tell us how much reward we have left to obtain
+        # We should be making each index t', calculating the gammas needed for the future then doing the calculation
+
+        # The gamma array will be different depending on where we are
+        # if t = T-1, we will only have the return
+        # if T = 0, we will have the full range of gammas
+        list_of_discounted_cumsums = np.zeros(len(rewards)+1)
+
+        for t in range(len(rewards) - 1, -1, -1):
+            list_of_discounted_cumsums[t] = rewards[t] + self.gamma * list_of_discounted_cumsums[t+1]
         
-        return list_of_discounted_cumsums
+        return list_of_discounted_cumsums[:-1]

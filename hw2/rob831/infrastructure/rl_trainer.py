@@ -46,7 +46,7 @@ class RL_Trainer(object):
 
         # Make the gym environment
         self.env = gym.make(self.params['env_name'])
-        self.env.seed(seed)
+        #self.env.seed(seed)
 
         # Add noise wrapper
         if params['action_noise_std'] > 0:
