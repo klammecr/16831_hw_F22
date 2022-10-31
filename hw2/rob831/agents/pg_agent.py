@@ -43,7 +43,7 @@ class PGAgent(BaseAgent):
 
         q_vals     = self.calculate_q_vals(rewards_list)
         advantages = self.estimate_advantage(observations, rewards_list, q_vals, terminals)
-        train_log  = self.actor.update(observations, actions, advantages, len(rewards_list), q_vals)
+        train_log  = self.actor.update(observations, actions, advantages, q_vals, len(rewards_list), num_updates=1)
 
         return train_log
 
@@ -90,7 +90,7 @@ class PGAgent(BaseAgent):
             assert values_normalized.ndim == q_values.ndim
 
             # Find the difference to adjust the mean and std to match the mean of the q values
-            values = np.mean(q_values) + ((values_normalized - np.mean(values_normalized)) * np.std(q_values) / np.std(values_normalized))
+            values = values_normalized * np.std(q_values) + np.mean(q_values)
 
             if self.gae_lambda is not None:
                 ## append a dummy T+1 value for simpler recursive calculation
@@ -106,10 +106,10 @@ class PGAgent(BaseAgent):
 
                 for i in reversed(range(batch_size)):
                     # If we are at the end of the trajectory, we will just have the reward(s) - V(s)
-                    delta = rewards[i] + self.gamma * values[i+1] * ~terminals[i] - values[i]
+                    delta = rewards[i] + self.gamma * values[i+1] * float(not bool(terminals[i])) - values[i]
 
                     # If we are at the end of a trajectory, this will just be delta as the R(s) - V(s) how much better the reward is from the expected value of the state
-                    advantages[i] = delta + self.gamma * self.gae_lambda * ~terminals[i] * advantages[i+1]
+                    advantages[i] = delta + self.gamma * self.gae_lambda * float(not bool(terminals[i])) * advantages[i+1]
 
                 # remove dummy advantage
                 advantages = advantages[:-1]
@@ -153,14 +153,6 @@ class PGAgent(BaseAgent):
         gamma_arr = np.array([self.gamma ** i for i in range(len(rewards))])
         # This is just the discounted sum of rewards
         return np.repeat(np.sum(rewards * gamma_arr), len(rewards))
-
-
-    def compute_gamma_arr(self, length):
-        """
-        Precomute the vectorized gamma array for each different possible starting point t
-        """
-
-
 
     def _discounted_cumsum(self, rewards):
         """

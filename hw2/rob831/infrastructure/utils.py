@@ -78,6 +78,7 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
         if ac.shape:
             ac = ac[0]
         acs.append(ac)
+        # TODO: Watch on autograder
         ob, rew, done, _, _ = env.step(ac)
         # add the observation after taking a step to next_obs
         next_obs.append(ob)

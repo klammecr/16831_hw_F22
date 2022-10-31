@@ -126,49 +126,61 @@ class MLPPolicyPG(MLPPolicy):
         super().__init__(ac_dim, ob_dim, n_layers, size, **kwargs)
         self.baseline_loss = nn.MSELoss()
 
-    def update(self, observations, actions, advantages, num_traj, q_values=None):
+    def update(self, observations, actions, advantages, q_values=None, num_traj=1, num_updates=1):
         # Convert to tensors
         observations = ptu.from_numpy(observations)
         actions      = ptu.from_numpy(actions)
         advantages   = ptu.from_numpy(advantages)
 
-        # Calculate the loss
-        policy_loss = 0
+        for update in range(num_updates):      
+            start = int((update/num_updates) * len(observations))
+            end   = int(((update+1) / num_updates) * len(observations))
+            num_traj_minibatch = max(1, int((1/num_updates) * num_traj))
+            obs_minibatch = observations[start:end]
+            act_minibatch = actions[start:end]
+            adv_minibatch = advantages[start:end]
+            q_val_minibatch = q_values[start:end]
 
-        # Forward pass, get the distribution of action prob.
-        act_prob_dist = self.forward(observations)
+            # Clear out accumulated gradients
+            self.optimizer.zero_grad()
 
-        # Get the log probability for that action
-        log_prob_act = act_prob_dist.log_prob(actions)
+            # Forward pass, get the distribution of action prob.
+            act_prob_dist = self.forward(obs_minibatch)
 
-        # Find the loss for the actions, find the negative because we are minimizing the negative log
-        policy_loss = Variable(torch.sum(-log_prob_act.detach() * advantages) / num_traj, requires_grad = True)
+            # Get the log probability for that action(s) that was taken
+            # We want to pass our actions through this distribution, this will tell us how probable the actions we took are. 
+            # If they have a high advantage value (weight) we will be shifting the weights towards making this action more probable in the future
+            log_prob_act = act_prob_dist.log_prob(act_minibatch)
 
-        # Clear out accumulated gradients
-        self.optimizer.zero_grad()
+            # Find the loss for the actions, find the negative because we are minimizing the negative log
+            # policy_loss = Variable(-torch.sum(log_prob_act.detach() * advantages), requires_grad = True)
+            policy_loss = -1/num_traj_minibatch * torch.sum(log_prob_act * adv_minibatch)
 
-        # Backpropegate the loss
-        policy_loss.backward()
+            # Backpropegate the loss
+            policy_loss.backward()
 
-        # Take an optimization step
-        self.optimizer.step()
+            # Take an optimization step
+            self.optimizer.step()
 
-        if self.nn_baseline:
-            ## update the neural network baseline using the q_values as
-            ## targets. The q_values should first be normalized to have a mean
-            ## of zero and a standard deviation of one.
-            targets = ptu.from_numpy(q_values)
+            if self.nn_baseline:
+                ## update the neural network baseline using the q_values as
+                ## targets. The q_values should first be normalized to have a mean
+                ## of zero and a standard deviation of one.
 
-            # Normalize the q values
-            targets = (targets - torch.mean(targets)) / torch.std(targets)
+                # Normalize the q values
+                targets = (q_val_minibatch - np.mean(q_val_minibatch)) / np.std(q_val_minibatch)
+                targets = ptu.from_numpy(targets)
 
-            # Calculate the loss by sampling from the network and comparing it to the Q value
-            loss_baseline = self.baseline_loss.forward(self.baseline.forward(observations).ravel(), targets)
+                # Find the baseline 
+                b = self.baseline(obs_minibatch).squeeze()
 
-            # Backpropegate the loss and update the parameters
-            self.baseline_optimizer.zero_grad()
-            loss_baseline.backward()
-            self.baseline_optimizer.step()
+                # Calculate the loss by sampling from the network and comparing it to the Q value
+                loss_baseline = self.baseline_loss.forward(b, targets)
+
+                # Backpropegate the loss and update the parameters
+                self.baseline_optimizer.zero_grad()
+                loss_baseline.backward()
+                self.baseline_optimizer.step()
 
         train_log = {
             'Training Loss': ptu.to_numpy(policy_loss),

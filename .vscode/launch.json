@@ -54,7 +54,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--env_name", "CartPole-v0", "-n", "100", "-b", "1000", "-dsa", "--exp_name", "q1_sb_no_rtg_dsa"]           
+            "args": ["--env_name", "CartPole-v0", "-n", "100", "-b", "1000", "-dsa", "--exp_name", "q1_sb_no_rtg_dsa", "-ngpu"]           
         },
         {
             "name": "CartPole HW2: RTG",
@@ -62,7 +62,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--env_name", "CartPole-v0", "-n", "100", "-b", "1000", "-dsa", "-rtg", "--exp_name", "q1_sb_rtg_na"]           
+            "args": ["--env_name", "CartPole-v0", "-n", "100", "-b", "1000", "-dsa", "-rtg", "--exp_name", "q1_sb_rtg_na", "-ngpu"]           
         },        
         {
             "name": "Lunar Lander HW2",
@@ -71,6 +71,20 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": ["--env_name", "LunarLanderContinuous-v2", "--ep_len", "1000", "--discount", "0.99", "-n", "100", "-l", "2", "-s", "64", "-b", "40000", "-lr", "0.005", "--reward_to_go", "--nn_baseline", "--exp_name", "q3_b40000_r0.005", "-ngpu"]
+        },
+        {   "name": "GAE Lambda=0",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--env_name", "Hopper-v4", "--ep_len", "1000", "--discount", "0.99", "-n", "300", "-l", "2", "-s", "32", "-b", "2000", "-lr", "0.001", "--reward_to_go", "--nn_baseline", "--action_noise_std", "0.5", "--gae_lambda", "0.0", "--exp_name", "q5_b2000_r0.001_lambda0", "-ngpu"]
+        },
+        {   "name": "Extra Credit",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--env_name", "Hopper-v4", "--ep_len", "1000", "--discount", "0.99", "-n", "100", "-l", "2", "-s", "32", "-b", "500", "-lr", "0.001", "--reward_to_go", "--nn_baseline", "--action_noise_std", "0.5", "--gae_lambda", "0.95", "--exp_name", "extracredit_minibatch4", "-ngpu"]
         }
     ]
 }
