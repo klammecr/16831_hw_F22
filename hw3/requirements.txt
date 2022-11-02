@@ -1,0 +1,14 @@
+numpy
+mujoco
+free-mujoco-py
+gym==0.17.2
+gym[atari]==0.17.2
+tensorboard==2.8.0
+tensorboardX==2.5.1
+matplotlib
+torch==1.12.1
+ipython
+moviepy
+opencv-python
+ipdb
+box2d-py
