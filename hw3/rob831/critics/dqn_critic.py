@@ -26,8 +26,8 @@ class DQNCritic(BaseCritic):
 
         self.optimizer_spec = optimizer_spec
         network_initializer = hparams['q_func']
-        self.q_net = network_initializer(self.ob_dim, self.ac_dim)
-        self.q_net_target = network_initializer(self.ob_dim, self.ac_dim)
+        self.q_net = network_initializer(self.ob_dim, self.ac_dim, 64, hparams["hidden_layers"])
+        self.q_net_target = network_initializer(self.ob_dim, self.ac_dim, 64, hparams["hidden_layers"])
         self.optimizer = self.optimizer_spec.constructor(
             self.q_net.parameters(),
             **self.optimizer_spec.optim_kwargs

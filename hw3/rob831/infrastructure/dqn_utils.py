@@ -81,15 +81,18 @@ def get_env_kwargs(env_name):
     return kwargs
 
 
-def create_lander_q_network(ob_dim, num_actions):
-    return nn.Sequential(
-        nn.Linear(ob_dim, 64),
-        nn.ReLU(),
-        nn.Linear(64, 64),
-        nn.ReLU(),
-        nn.Linear(64, num_actions),
-    )
-
+def create_lander_q_network(ob_dim, num_actions, num_hidden_units=64, num_hidden_layers=1):
+    modules = []
+    modules.append(nn.Linear(ob_dim, num_hidden_units))
+    modules.append(nn.ReLU())
+    
+    for i in range(num_hidden_layers):
+        modules.append(nn.Linear(num_hidden_units, num_hidden_units))
+        modules.append(nn.ReLU())
+    
+    modules.append(nn.Linear(num_hidden_units, num_actions))
+    return nn.Sequential(*modules)
+        
 class Ipdb(nn.Module):
     def __init__(self):
         super().__init__()
