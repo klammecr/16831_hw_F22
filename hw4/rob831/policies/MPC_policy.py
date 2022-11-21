@@ -59,7 +59,6 @@ class MPCPolicy(BasePolicy):
             return random_action_sequences
 
         elif self.sample_strategy == 'cem':
-            # TODO(Q5): Implement action selection using CEM.
             # Begin with randomly selected actions, then refine the sampling distribution
             # iteratively as described in Section 3.3, "Iterative Random-Shooting with Refinement" of
             # https://arxiv.org/pdf/1909.11652.pdf
@@ -68,18 +67,28 @@ class MPCPolicy(BasePolicy):
             random_action_sequences = np.random.uniform(low=self.low, high=self.high, size=(num_sequences, self.horizon, self.ac_dim))  
 
             # Collect the initial mean and variance
-            cem_mean = np.zeros((horizon, self.ac_dim))
-            cem_var  = np.ones((horizon, self.ac_dim))
+            try:
+                cem_mean
+            except:
+                cem_mean = np.zeros((horizon, self.ac_dim))
+            
+            try:
+                cem_var
+            except:
+                cem_var  = np.ones((horizon, self.ac_dim))
             
             for i in range(self.cem_iterations):
                 # Sample
-                if i == 0:
-                    cem_action_seq = random_action_sequences
+                if not self.data_statistics:
+                    
+                    return random_action_sequences
+                    #cem_action_seq = random_action_sequences
                 else:
                     # Sample from the gaussian distribution
+                    print("ok")
                     cem_action_seq = np.zeros((num_sequences, horizon, self.ac_dim))
                     for seq in range(num_sequences):
-                      action_entry = np.random.normal(cem_mean, np.sqrt(cem_var))
+                      action_entry = np.random.normal(cem_mean, np.sqrt(cem_var), size = (self.horizon, self.ac_dim))
                       cem_action_seq[seq] = action_entry
 
                 # Assess the performance of the action sequences
@@ -87,7 +96,7 @@ class MPCPolicy(BasePolicy):
 
                 # Sort the sequences and select the elites
                 elite_idxs = np.argsort(mean_reward_seqs)
-                elites     = cem_action_seq[elite_idxs][-self.cem_num_elites]
+                elites     = cem_action_seq[elite_idxs][-self.cem_num_elites:]
 
                 # Update the mean and variance for those of the elites
                 # Find the mean + variance over all the sequences 
@@ -117,11 +126,11 @@ class MPCPolicy(BasePolicy):
 
     def get_action(self, obs):
         if self.data_statistics is None:
-          return self.sample_action_sequences(num_sequences=1, horizon=1)[0]
+          return self.sample_action_sequences(num_sequences=1, horizon=1, obs=obs)[0]
 
         # sample random actions (N x horizon)
         candidate_action_sequences = self.sample_action_sequences(
-            num_sequences=self.N, horizon=self.horizon)
+            num_sequences=self.N, horizon=self.horizon, obs=obs)
 
         if candidate_action_sequences.shape[0] == 1:
             # CEM: only a single action sequence to consider; return the first action
@@ -158,8 +167,6 @@ class MPCPolicy(BasePolicy):
         # Hint: Remember that the model can process observations and actions
         #       in batch, which can be much faster than looping through each
         #       action sequence.
-        sum_of_rewards = None  # TODO (Q2)
-
         num_seq = candidate_action_sequences.shape[0]
         # Here, we will use our dynamics model to find our list of next states, using the selected actions
         rewards = np.zeros((num_seq))
