@@ -6,6 +6,7 @@
     "configurations": [
 
 
+
         {
             "name": "Vanilla Behavior Cloning Ant",
             "type": "python",
@@ -93,8 +94,18 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--env_name", "LunarLander-v3", "--hidden_layers", "2", "--exp_name", "test"]
+            "args": ["--env_name", "LunarLander-v3", "--exp_name", "test"]
+                   
+        },
+                {
+            "name": "asfdsa",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--logdir", "/home/klammerc/dev/16831_hw_F22/hw3/data"]
                    
         }
+
     ]
 }

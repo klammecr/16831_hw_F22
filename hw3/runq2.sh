@@ -7,11 +7,10 @@
 # python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --exp_name q2_doubledqn_3 --double_q --seed 3
 
 # Parameter Tuning!
-python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 2 --exp_name q3_hparam1
-python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 3 --exp_name q3_hparam2
-python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 4 --exp_name q3_hparam3
-# python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --exp_name q3_hp--exp_name aram2
-# python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --exp_name q3_hparam3
+python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 2 --hidden_units 32 --exp_name q3_hparam1
+python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 2 --hidden_units 64 --exp_name q3_hparam2
+python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 2 --hidden_units 128 --exp_name q3_hparam3
+python rob831/scripts/run_hw3_dqn.py --env_name LunarLander-v3 --hidden_layers 2 --hidden_units 256 --exp_name q3_hparam4
 
 # Evaluation Question 4
 # python rob831/scripts/run_hw3_actor_critic.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name q4_ac_1_1 -ntu 1 -ngsptu 1

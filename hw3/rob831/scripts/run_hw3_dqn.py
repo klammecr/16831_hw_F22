@@ -62,6 +62,7 @@ def main():
     parser.add_argument('--scalar_log_freq', type=int, default=int(1e4))
     parser.add_argument('--video_log_freq', type=int, default=-1)
     parser.add_argument('--hidden_layers', type=int, default=1)
+    parser.add_argument('--hidden_units', type=int, default=64)
 
     parser.add_argument('--save_params', action='store_true')
 

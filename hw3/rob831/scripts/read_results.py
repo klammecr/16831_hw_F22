@@ -21,13 +21,26 @@ def get_section_results(file):
     return X, Y
 
 if __name__ == '__main__':
+    from matplotlib import pyplot as plt
     parser = argparse.ArgumentParser()
     parser.add_argument('--logdir', type=str, required=True, help='path to directory contaning tensorboard results (i.e. data/q1)')
     args = parser.parse_args()
 
-    logdir = os.path.join(args.logdir, 'events*')
-    eventfile = glob.glob(logdir)[0]
+    eventfile = glob.glob("/home/klammerc/dev/16831_hw_F22/hw3/data/*/events*")
 
-    X, Y = get_section_results(eventfile)
-    for i, (x, y) in enumerate(zip(X, Y)):
-        print('Iteration {:d} | Train steps: {:d} | Return: {}'.format(i, int(x), y))
+    for file in eventfile:
+        if "hparam1" in file:
+            label = 32
+        if "hparam2" in file:
+            label = 64
+        if "hparam3" in file:
+            label = 128
+        if "hparam4" in file:
+            label = 256
+        X, Y = get_section_results(file)
+        i = min(len(X), len(Y))
+        plt.plot(X[:i], Y[:i], label = label)
+        plt.xlabel("Iteration")
+        plt.ylabel("Average Return")
+        plt.legend()
+        plt.title("Hidden Layer Size Effect on Average Return for 2 Hidden Layer DQN Networks")
