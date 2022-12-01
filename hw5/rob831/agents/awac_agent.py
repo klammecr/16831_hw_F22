@@ -38,8 +38,9 @@ class AWACAgent(DQNAgent):
             self.agent_params['size'],
             self.agent_params['discrete'],
             self.agent_params['learning_rate'],
-            self.agent_params['awac_lambda'],
+            lambda_awac = self.agent_params['awac_lambda']
         )
+        print(f"Lambda: {self.agent_params['awac_lambda']}")
 
         self.exploit_rew_shift = agent_params['exploit_rew_shift']
         self.exploit_rew_scale = agent_params['exploit_rew_scale']
@@ -53,9 +54,12 @@ class AWACAgent(DQNAgent):
         self.rnd_gamma = rnd_gamma
 
     def get_qvals(self, critic, obs, action = None):
-        vals = ptu.from_numpy(critic.qa_values(ptu.to_numpy(obs)))
+        vals = critic.q_net(obs)
         if action is not None:
-            vals = torch.gather(vals, 1, action.unsqueeze(1)).squeeze(1) 
+            if isinstance(action, int):
+                vals = vals[:, action]
+            else:
+                vals = torch.gather(vals, 1, action.unsqueeze(1)).squeeze(1) 
         # For a given critic, find the 
         return vals
 
@@ -73,8 +77,8 @@ class AWACAgent(DQNAgent):
 
         # Calculate Value Function Estimate given current observation
         # You may find it helpful to utilze get_qvals defined above
-        qa_vals        = self.get_qvals(self.critic, ob_no)
-        value_estimate = torch.mean(qa_vals, dim = 1)[0]
+        #value_estimate = self.get_qvals(self.exploitation_critic, ob_no).mean(dim = 1)
+        value_estimate = (self.awac_actor.forward(ob_no).probs * self.get_qvals(self.exploitation_critic, ob_no)).sum(dim = 1)
 
         # Implement advantage estimate using AWR
         if self.awr:
@@ -82,7 +86,7 @@ class AWACAgent(DQNAgent):
 
         # Implement advantage estimate using AWAC
         else:
-            q_vals = self.get_qvals(self.critic, ob_no, ac_na)
+            q_vals = self.get_qvals(self.exploitation_critic, ob_no, ac_na)
             advantage = q_vals - value_estimate     
             return advantage
 

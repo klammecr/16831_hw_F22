@@ -177,7 +177,7 @@ class MLPPolicyAWAC(MLPPolicy):
         log_prob_act = act_prob_dist.log_prob(actions)
 
         # Weight the advantages by the log probability and average it over each s,a in the trajectory
-        actor_loss = torch.mean(log_prob_act * torch.exp(1/self.lambda_awac * adv_n))
+        actor_loss = -torch.mean(log_prob_act * torch.exp((1/self.lambda_awac) * adv_n)) # Use minus because we want to minimize the negative log likelihood (same as maximizing LL)
 
         # Gradient step
         self.optimizer.zero_grad()
