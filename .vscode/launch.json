@@ -4,9 +4,22 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
-
-
+        {
+            "name": "HW5: CQL",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "-env_name", "PointmassMedium-v0",
+                "--use_rnd",
+                "--num_exploration_steps", "20000",
+                "--cql_alpha", "0.0",
+                "--offline_exploitation",
+                "--exp_name", "q1_medium_dqn"
+            ],
+            "justMyCode": true
+        },
         {
             "name": "Vanilla Behavior Cloning Ant",
             "type": "python",

@@ -26,21 +26,15 @@ if __name__ == '__main__':
     # parser.add_argument('--logdir', type=str, required=True, help='path to directory contaning tensorboard results (i.e. data/q1)')
     # args = parser.parse_args()
 
-    eventfile = glob.glob("/home/klammerc/dev/16831_hw_F22/hw5/data/hw5_expl_q4*medium*/*events*")
+    eventfile = glob.glob("/home/klammerc/dev/16831_hw_F22/hw5/data/hw5_expl_q1*hard*/*events*")
 
     for file in eventfile:
-        if "lam0.1" in file:
-            label = "0.1"
-        if "lam1" in file:
-            label = "1"
-        if "lam2" in file:
-            label = "2"
-        if "lam10" in file:
-            label = "10"
-        if "lam20" in file:
-            label = "20"
-        if "lam50" in file:
-            label = "50"
+        if "cql_noscaleshift" in file:
+            label = "CQL No Scale Shift"
+        elif "cql" in file:
+            label = "CQL Scale Shift"
+        else:
+            label = "DQN"
 
         import numpy as np
         X, Y = get_section_results(file)
@@ -50,4 +44,4 @@ if __name__ == '__main__':
         plt.ylabel("Evaluation Average Return")
         plt.legend()
         plt.title("Effect of Lambda on Average Eval Return")
-        plt.savefig('Q4_Medium.png')
+        plt.savefig('Q1_Extra_Hard.png')
