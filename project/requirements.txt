@@ -17,7 +17,6 @@ google-auth==2.12.0
 google-auth-oauthlib==0.4.6
 grpcio==1.49.1
 gym==0.21.0
--e git+ssh://git@github.com/utiasDSL/gym-pybullet-drones.git@2b09b34d2309e6aea4db91dfd2cc9492ca8fe67a#egg=gym_pybullet_drones&subdirectory=..\..\..\project\gym-pybullet-drones
 idna==3.4
 imageio==2.22.1
 importlib-metadata==5.0.0

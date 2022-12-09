@@ -1,15 +1,24 @@
 import gym
 from gym_pybullet_drones.utils.Logger import Logger
-from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
+# from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
+from navigation_aviary import NavigationAviary
 from stable_baselines3.common.env_checker import check_env
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 
+from gym.envs.registration import register
+
+# Register our custom environment
+register(
+    id = "navigation-aviary-v0",
+    entry_point='navigation_aviary:NavigationAviary',
+)
+
 # Create the gym environment
-env = gym.make("takeoff-aviary-v0")
-env = TakeoffAviary(record=True, gui = True)
+env = gym.make("navigation-aviary-v0")
+env = NavigationAviary(record=True, gui = True)
 
 print("[INFO] Action space:", env.action_space)
 print("[INFO] Observation space:", env.observation_space)
@@ -26,7 +35,7 @@ for i in range(10*240):
     reward_traj += reward
     rewards.append(reward_traj)
     env.render()
-    if done or reward < -2:
+    if done:
         obs = env.reset()
         rewards_all[i] = rewards
         rewards = []
@@ -49,8 +58,7 @@ for end_iter in rewards_all:
 
     start_iter  = int(end_iter) + 1
 
-plt.title("Reward of a Random Agent - Takeoff")
+plt.title("Reward of a Random Agent - Navigation")
 plt.xlabel("Iteration")
 plt.ylabel("Cumulative Reward")
-plt.legend()
-plt.savefig("results/RandomAgentPerformance.png")
+plt.savefig("results/RandomAgentPerformance_Navigation.png")
