@@ -25,7 +25,8 @@ class NavigationAviary(BaseSingleAgentAviary):
                  record=False, 
                  obs: ObservationType=ObservationType.KIN,
                  act: ActionType=ActionType.RPM,
-                 goal_loc = [0, 10, 1]
+                 goal_loc = [1, 5, 1],
+                 num_obstacles = None
                  ):
         """Initialization of a single agent RL environment.
         Using the generic single agent RL superclass.
@@ -61,11 +62,24 @@ class NavigationAviary(BaseSingleAgentAviary):
         initial_xyzs = np.zeros((1, 3))
         initial_xyzs[0] = np.array(self.start_location)
 
+        # Define the number of obstacles
+        self.num_obstacles = num_obstacles
+        # Precalculate where to put those obstacles :)
+        if self.num_obstacles > 0:
+            # Get the heading vector 
+            self.heading_vec = self.goal_location - self.start_location
+
+            # Determine the depth of each obstacle, make it equally spaced
+            self.obstacle_x = np.linspace(0, self.heading_vec[0], self.num_obstacles)
+            self.obstacle_y = np.linspace(0, self.heading_vec[1], self.num_obstacles)
+            self.obstacle_z = np.linspace(0, self.heading_vec[2], self.num_obstacles)
+
         # Parameters
         self.k1 = 1
-        self.k2 = 1
-        self.k3 = 1
-        self.k4= 10
+        self.k2 = 10
+        self.k3 = 10
+        self.k4= 1
+        self.k5 = -0.1
         
         super().__init__(drone_model=drone_model,
                          initial_xyzs=initial_xyzs,
@@ -108,17 +122,29 @@ class NavigationAviary(BaseSingleAgentAviary):
         self.crash = False
         self._addPlatforms()
 
-        for i in range(5): 
-            p.loadURDF("cube_small.urdf",
-                       [-.3, -1, .02+i*0.05],
-                       p.getQuaternionFromEuler([0, 0, 0]),
-                       physicsClientId=self.CLIENT
-                       )
-            p.loadURDF("cube_small.urdf",
-                       [.3, -1, .02+i*0.05],
-                       p.getQuaternionFromEuler([0,0,0]),
-                       physicsClientId=self.CLIENT
-                       )
+        for i in range(self.num_obstacles):
+            if i % 3 == 0:
+                # Add obstacle in the middle
+                p.loadURDF("gym-pybullet-drones/gym_pybullet_drones/assets/cf2x.urdf",
+                            [self.obstacle_x[i], self.obstacle_y[i], self.obstacle_z[i]],
+                            p.getQuaternionFromEuler([0, 0, 0]),
+                            physicsClientId=self.CLIENT
+                            )
+            elif i % 3 == 1:
+                # Add obstacles to the right of goal relative to the drone
+                p.loadURDF("gym-pybullet-drones/gym_pybullet_drones/assets/cf2x.urdf",
+                            [self.obstacle_x[i], self.obstacle_y[i] - 0.1, self.obstacle_z[i]],
+                            p.getQuaternionFromEuler([0, 0, 0]),
+                            physicsClientId=self.CLIENT
+                            )
+            else:
+                # Add obstacle to the left of goal relative to the drone
+                p.loadURDF("gym-pybullet-drones/gym_pybullet_drones/assets/cf2x.urdf",
+                            [self.obstacle_x[i], self.obstacle_y[i] + 0.1, self.obstacle_z[i]],
+                            p.getQuaternionFromEuler([0, 0, 0]),
+                            physicsClientId=self.CLIENT
+                            )
+
 
     ################################################################################
     
@@ -133,10 +159,16 @@ class NavigationAviary(BaseSingleAgentAviary):
         norm_ep_time = (self.step_counter/self.SIM_FREQ) / self.EPISODE_LEN_SEC
 
         # Reward for the hover height
-        R_hover = self.k1 * (1 - np.exp(-(state[2] - self.goal_location[2]) ** 2))
+        R_hover = self.k1 * (np.exp(-(state[2] - self.goal_location[2]) ** 2))
 
         # Reward for goal
-        R_goal = self.k2 * (1 - np.exp(-np.linalg.norm(self.goal_location[0:2]-state[0:2])**2))
+        goal_dist = np.linalg.norm(self.goal_location[0:2]-state[0:2])
+        if goal_dist > 1:
+            goal_reward = np.exp(-goal_dist)
+        else:
+            goal_reward = np.exp(-goal_dist ** 2)
+
+        R_goal = self.k2 *  goal_reward # Quadraticly increase the reward when close, quadratically decrease when ar away
 
         # Give negative rewards for too much change in torque
         R_crash = self.k3 * -10 * int(state[2] <= 0.1)
@@ -148,8 +180,11 @@ class NavigationAviary(BaseSingleAgentAviary):
         angular_vel = state[13:16]
         R_rot = -self.k4 * np.linalg.norm(angular_vel)
 
+        # Reduce the wandering of the drone to the waypoint
+        R_wander = self.k5
+
         #R_goal = 
-        return R_hover + R_goal + R_crash + R_rot
+        return R_hover + R_goal + R_crash + R_rot + R_wander
 
     ################################################################################
     

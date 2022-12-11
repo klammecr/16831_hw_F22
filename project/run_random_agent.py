@@ -26,11 +26,15 @@ check_env(env,
             warn=True,
             skip_render_check=True
             )
+
+# Run the random agent in simulation
 obs = env.reset()
 rewards_all = {}
 rewards = []
 reward_traj = 0
-for i in range(10*240):
+i = 0
+
+while len(rewards_all) < 10:
     obs, reward, done, info = env.step(env.action_space.sample())
     reward_traj += reward
     rewards.append(reward_traj)
@@ -38,6 +42,7 @@ for i in range(10*240):
     if done:
         obs = env.reset()
         rewards_all[i] = rewards
+        i += 1
         rewards = []
         reward_traj = 0
 env.close()
@@ -53,12 +58,13 @@ for end_iter in rewards_all:
     traj = rewards_all[end_iter]
 
     # Plot
-    x = list(range(start_iter, int(end_iter) + 1))
+    x = list(range(len(traj)))
     plt.plot(x, traj[:], color = c, linestyle="dashed")
 
     start_iter  = int(end_iter) + 1
 
-plt.title("Reward of a Random Agent - Navigation")
+plt.title(f"Reward of a Random Agent - Navigation")
 plt.xlabel("Iteration")
 plt.ylabel("Cumulative Reward")
-plt.savefig("results/RandomAgentPerformance_Navigation.png")
+plt.legend()
+plt.savefig(f"results/Random NavAgentPerformance.png")
