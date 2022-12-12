@@ -1,0 +1,29 @@
+References:Citation: Zhao, J.; Liu, H.; Sun, J.;
+Wu, K.; Cai, Z.; Ma, Y.; Wang, Y. Deep
+Reinforcement Learning-Based
+End-to-End Control for UAV
+Dynamic Target Tracking. Biomimetics
+2022, 7, 197. https://doi.org/
+10.3390/biomimetics7040197
+Academic Editor: Stanislav N. Gorb
+Received: 8 September 2022
+Accepted: 4 November 2022
+Published: 11 November 2022
+Publisher’s Note: MDPI stays neutral
+with regard to jurisdictional claims in
+published maps and institutional affil-
+iations.
+Copyright: © 2022 by the authors.
+Licensee MDPI, Basel, Switzerland.
+This article is an open access article
+distributed under the terms and
+conditions of the Creative Commons
+Attribution (CC BY) license (https://
+creativecommons.org/licenses/by/
+4.0/).biomimetics
+Article
+Deep Reinforcement Learning-Based End-to-End Control for
+UAV Dynamic Target Tracking
+
+file:///home/klammerc/Downloads/biomimetics-07-00197-v2.pdf
+

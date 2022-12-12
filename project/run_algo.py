@@ -21,8 +21,8 @@ import argparse
 import gym
 import numpy as np
 from stable_baselines3 import A2C, TD3, PPO
-from stable_baselines3.a2c import MlpPolicy as MlpPolicyA2C
-from stable_baselines3.td3.policies import MlpPolicy as MlpPolicyTD3
+from stable_baselines3.common.policies import MultiInputActorCriticPolicy, ActorCriticPolicy
+#from stable_baselines3.td3.policies import MlpPolicy as MlpPolicyTD3
 from stable_baselines3 import SAC
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback
@@ -40,10 +40,10 @@ from matplotlib import pyplot as plt
 import os
 
 from navigation_aviary import NavigationAviary
+from navigation_aviary_rgb import NavigationAviaryVision
 from gym.envs.registration import register
 
 from gym_pybullet_drones.utils.Logger import Logger
-from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.utils.utils import sync, str2bool
 
 # CEM Implementation
@@ -100,7 +100,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         return True
 
-def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_GUI, plot=True, colab=DEFAULT_COLAB, record_video=DEFAULT_RECORD_VIDEO):
+def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_GUI, plot=True, colab=DEFAULT_COLAB, record_video=DEFAULT_RECORD_VIDEO, preload = ""):
     
     # Create log dir
     log_dir = "tmp/"
@@ -111,113 +111,149 @@ def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, g
         id = "navigation-aviary-v0",
         entry_point='navigation_aviary:NavigationAviary',
     )
+    register(
+        id = "vision-navigation-aviary-v0",
+        entry_point='navigation_aviary_rgb:NavigationAviaryVision',
+    )
 
     # Create the gym environment
+    # Normal navigation aviary 
     env = gym.make("navigation-aviary-v0")
-    env = NavigationAviary(record=False, gui = False)
-    #env = NavigationAviary(record=True, gui = True)
+    #env = NavigationAviary(record=True, gui = True, num_obstacles=0)
+    env = NavigationAviary(record=False, gui = False, num_obstacles=0)
+
+    # Vision navigation aviary
+    #env = gym.make("vision-navigation-aviary-v0") 
+    #env = NavigationAviaryVision(record=True, gui = True, num_obstacles=6)
+    #env = NavigationAviaryVision(record=False, gui = False, num_obstacles=6)
+
+    # Set up monitor
     env = Monitor(env, log_dir)
 
     # Give some information about the observation and action space
     print("[INFO] Action space:", env.action_space)
     print("[INFO] Observation space:", env.observation_space)
+
+    # If having problems, put warn to true
     check_env(env,
-                warn=True,
+                warn=False,
                 skip_render_check=True)
 
     # Create the callback: check every 1000 steps
     callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
 
     # Number of training steps
-    train_steps = 5e5
+    train_steps = 1e6
     action_noise = NormalActionNoise(np.array([0,0,0,0]), np.array([0.1, 0.1, 0.1, 0.1]))
 
 
-    # Choose your algorithm
-    if algo == "A2C":
-        model = A2C(MlpPolicyA2C,
-                    env,
-                    verbose=1
-                    )
-        model.learn(total_timesteps=train_steps, \
-                    callback=callback) # Typically not enough
-        model.save("NavAviary_A2C")
-    elif algo == "TD3":
-        model = TD3(MlpPolicyTD3, env, action_noise=action_noise)
-        model.learn(total_timesteps=train_steps, callback = callback) # Typically not enough
-        model.save("NavAviary_TD3")
-    elif algo == "PPO":
-        model = PPO("MlpPolicy", env)
-        model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
-        model.save("NavAviary_PPO")
-    elif algo == "SAC":
-        model = SAC("MlpPolicy", env)
-        model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
-        model.save("NavAviary_SAC")
-    elif algo == "CEM":
-        # Set the parameters for CEM
-        agent_params = {}
-        agent_params["seed"]                          = 6969
-        agent_params["no_gpu"]                        = False
-        agent_params["which_gpu"]                     = 0
-        agent_params['video_log_freq']                = -1
-        agent_params['scalar_log_freq']               = 1
-        agent_params['save_params']                   = False
-        agent_params["env_name"]                      = "navigation-aviary-v0"
-        agent_params["exp_name"]                      = "MB_Exp"
-        agent_params['n_iter']                        = 20#train_steps
-        agent_params['batch_size']                    = 5000
-        agent_params['batch_size_initial']            = 5000
-        agent_params['train_batch_size']              = 512
-        agent_params['eval_batch_size']               = 400
-        agent_params['ac_dim']                        = env.action_space.shape
-        agent_params['ob_dim']                        = env.observation_space.shape
-        agent_params['n_layers']                      = 2
-        agent_params['mpc_horizon']                   = 15
-        agent_params['ensemble_size']                 = 5
-        agent_params['size']                          = 250
-        agent_params['ep_len']                        = 500
-        agent_params['num_agent_train_steps_per_iter']= 1500
-        agent_params['mpc_action_sampling_strategy']  = "cem"
-        agent_params['mpc_num_action_sequences']      = 1000
-        agent_params['cem_iterations']                = 4
-        agent_params['cem_num_elites']                = 8
-        agent_params['cem_alpha']                     = 1.0
-        agent_params['learning_rate']                 = 1e-3
-        agent_params['add_sl_noise']                  = True
+    if preload == "":
+        # Decide on the kind of policy depending on which aviary
+        if algo == "SAC":
+            if isinstance(env.unwrapped, NavigationAviaryVision):
+                policy = "MultiInputPolicy"
+            else:
+                policy = "MlpPolicy"
+        else:
+            if isinstance(env.unwrapped, NavigationAviaryVision):
+                policy = MultiInputActorCriticPolicy
+            else:
+                policy = ActorCriticPolicy
 
-        # Setup log directory
-        logdir_prefix = "results"
+        # Choose your algorithm
+        if algo == "A2C":
+            model = A2C(policy,
+                        env,
+                        verbose=1
+                        )
+            model.learn(total_timesteps=train_steps, \
+                        callback=callback) # Typically not enough
+            model.save("NavAviary_A2C")
+        elif algo == "TD3":
+            model = TD3(policy, env, action_noise=action_noise)
+            model.learn(total_timesteps=train_steps, callback = callback) # Typically not enough
+            model.save("NavAviary_TD3")
+        elif algo == "PPO":
+            model = PPO(policy, env)
+            model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
+            model.save("NavAviary_PPO")
+        elif algo == "SAC":
+            model = SAC(policy, env)
+            model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
+            model.save("NavAviary_SAC")
+        elif algo == "CEM":
+            # Set the parameters for CEM
+            agent_params = {}
+            agent_params["seed"]                          = 6969
+            agent_params["no_gpu"]                        = False
+            agent_params["which_gpu"]                     = 0
+            agent_params['video_log_freq']                = -1
+            agent_params['scalar_log_freq']               = 1
+            agent_params['save_params']                   = False
+            agent_params["env_name"]                      = "navigation-aviary-v0"
+            agent_params["env"]                           = env
+            agent_params["exp_name"]                      = "MB_Exp"
+            agent_params['n_iter']                        = 15#train_steps
+            agent_params['batch_size']                    = 5000
+            agent_params['batch_size_initial']            = 5000
+            agent_params['train_batch_size']              = 512
+            agent_params['eval_batch_size']               = 400
+            agent_params['ac_dim']                        = env.action_space.shape
+            agent_params['ob_dim']                        = env.observation_space.shape
+            agent_params['n_layers']                      = 2
+            agent_params['mpc_horizon']                   = 15
+            agent_params['ensemble_size']                 = 5
+            agent_params['size']                          = 250
+            agent_params['ep_len']                        = 500
+            agent_params['num_agent_train_steps_per_iter']= 1500
+            agent_params['mpc_action_sampling_strategy']  = "cem"
+            #agent_params['mpc_action_sampling_strategy']  = "random"
+            agent_params['mpc_num_action_sequences']      = 1000
+            agent_params['cem_iterations']                = 4
+            agent_params['cem_num_elites']                = 8
+            agent_params['cem_alpha']                     = 1.0
+            agent_params['learning_rate']                 = 1e-3
+            agent_params['add_sl_noise']                  = True
 
-        data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+            # Setup log directory
+            logdir_prefix = "results"
 
-        if not (os.path.exists(data_path)):
-            os.makedirs(data_path)
+            data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
-        
-        logdir = logdir_prefix + agent_params["exp_name"] + '_' + agent_params["env_name"] + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
-        logdir = os.path.join(data_path, logdir)
-        agent_params['logdir'] = logdir
-        if not(os.path.exists(logdir)):
-            os.makedirs(logdir)
-        print("\n\n\nLOGGING TO: ", logdir, "\n\n\n")
+            if not (os.path.exists(data_path)):
+                os.makedirs(data_path)
 
-        # Setup the Model Based Training to Run!
-        model = MB_Trainer(agent_params)
-        model.run_training_loop()
+            
+            logdir = logdir_prefix + agent_params["exp_name"] + '_' + agent_params["env_name"] + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+            logdir = os.path.join(data_path, logdir)
+            agent_params['logdir'] = logdir
+            if not(os.path.exists(logdir)):
+                os.makedirs(logdir)
+            print("\n\n\nLOGGING TO: ", logdir, "\n\n\n")
 
-    # Plot results
-    results_plotter.plot_results([log_dir], train_steps, results_plotter.X_TIMESTEPS, algo)
-    plt.show()
+            # Setup the Model Based Training to Run!
+            model = MB_Trainer(agent_params)
+            model.run_training_loop()
 
+        # Plot results
+        results_plotter.plot_results([log_dir], train_steps, results_plotter.X_TIMESTEPS, algo)
+        plt.show()
 
-    # Evaluate the policy of interest
-    mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=100)
-    print(f"Mean Reward: {mean_reward}")
-    print(f"Std Reward: {std_reward}")
+        # Evaluate the policy of interest
+        mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=100)
+        print(f"Mean Reward: {mean_reward}")
+        print(f"Std Reward: {std_reward}")
 
-    # if algo == "SAC":
-    #     model = SAC.load("results/SAC_model.zip")
+    else:
+        # Load the pretrained models for eval
+        if "A2C" in preload:
+            model = A2C.load(preload)
+        elif "SAC" in preload:
+            model = SAC.load(preload)
+        elif "TD3" in preload:
+            model = TD3.load(preload)
+        elif "PPO" in preload:
+            model = PPO.load(preload)
 
     # Run the model in simulation
     obs = env.reset()
@@ -270,7 +306,8 @@ if __name__ == "__main__":
     parser.add_argument('--record_video',       default=DEFAULT_RECORD_VIDEO,      type=str2bool,      help='Whether to record a video (default: False)', metavar='')
     parser.add_argument('--output_folder',     default=DEFAULT_OUTPUT_FOLDER, type=str,           help='Folder where to save logs (default: "results")', metavar='')
     parser.add_argument('--colab',              default=DEFAULT_COLAB, type=bool,           help='Whether example is being run by a notebook (default: "False")', metavar='')
-    parser.add_argument("--algo", default="CEM", type=str)
+    parser.add_argument("--algo", default="PPO", type=str)
+    parser.add_argument("--preload", default = "", type = str)
     ARGS = parser.parse_args()
 
     run(**vars(ARGS))

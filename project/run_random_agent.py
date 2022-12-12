@@ -2,6 +2,7 @@ import gym
 from gym_pybullet_drones.utils.Logger import Logger
 # from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from navigation_aviary import NavigationAviary
+from navigation_aviary_rgb import NavigationAviaryVision
 from stable_baselines3.common.env_checker import check_env
 
 import matplotlib.pyplot as plt
@@ -15,10 +16,17 @@ register(
     id = "navigation-aviary-v0",
     entry_point='navigation_aviary:NavigationAviary',
 )
+register(
+id = "vision-navigation-aviary-v0",
+entry_point='navigation_aviary_rgb:NavigationAviaryVision',
+)
 
 # Create the gym environment
 env = gym.make("navigation-aviary-v0")
 env = NavigationAviary(record=True, gui = True)
+
+# env = gym.make("vision-navigation-aviary-v0") 
+# env = NavigationAviaryVision(record=True, gui = True, num_obstacles=6)
 
 print("[INFO] Action space:", env.action_space)
 print("[INFO] Observation space:", env.observation_space)

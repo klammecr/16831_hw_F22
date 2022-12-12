@@ -4,12 +4,13 @@ import pybullet as p
 import pkg_resources
 
 from gym_pybullet_drones.utils.enums import DroneModel, Physics
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType, BaseSingleAgentAviary
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary  import ActionType, ObservationType
+from gym_pybullet_drones.envs.single_agent_rl.SingleVisionAviary import SingleVisionAviary
 
 TABLE_HEIGHT = 0.29
 TABLE_THICK  = 0.05
 
-class NavigationAviary(BaseSingleAgentAviary):
+class NavigationAviaryVision(SingleVisionAviary):
     """Single agent RL problem: fly across an abyss"""
     
     ################################################################################
@@ -23,8 +24,6 @@ class NavigationAviary(BaseSingleAgentAviary):
                  aggregate_phy_steps: int=1,
                  gui=False,
                  record=False, 
-                 obs: ObservationType=ObservationType.KIN,
-                 act: ActionType=ActionType.RPM,
                  goal_loc = [1, 5, 1],
                  num_obstacles = 0):
         """Initialization of a single agent RL environment.
@@ -63,6 +62,9 @@ class NavigationAviary(BaseSingleAgentAviary):
 
         # Define the number of obstacles
         self.num_obstacles = num_obstacles
+        self.obstacles     = []
+        self.crash         = False
+
         # Precalculate where to put those obstacles :)
         if self.num_obstacles > 0:
             # Get the heading vector 
@@ -74,26 +76,23 @@ class NavigationAviary(BaseSingleAgentAviary):
             self.obstacle_z = np.linspace(self.start_location[2] + self.heading_vec[2]/self.num_obstacles, self.heading_vec[2] - self.heading_vec[2]/self.num_obstacles, self.num_obstacles)
 
         # Parameters
-        self.k1 = 2
+        self.k1 = 1
         self.k2 = 10
         self.k3 = 10
-        self.k4 = 0.2
+        self.k4= 1
         self.k5 = -0.1
         self.k6 = 1
-        
-        super().__init__(drone_model=drone_model,
-                         initial_xyzs=initial_xyzs,
-                         initial_rpys=initial_rpys,
-                         physics=physics,
-                         freq=freq,
-                         aggregate_phy_steps=aggregate_phy_steps,
-                         gui=gui,
-                         record=record,
-                         obs=obs,
-                         act=act
-                         )
 
-        
+        super().__init__(drone_model=drone_model,
+            initial_xyzs=initial_xyzs,
+            initial_rpys=initial_rpys,
+            physics=physics,
+            freq=freq,
+            aggregate_phy_steps=aggregate_phy_steps,
+            gui=gui,
+            record=record,
+            obstacles=True,
+            user_debug_gui=False)
 
     def _addPlatforms(self):
         # Add the platform that the drone sits on
@@ -113,19 +112,6 @@ class NavigationAviary(BaseSingleAgentAviary):
                         )
 
     ################################################################################
-    
-    def _physics(self, rpm, nth_drone):
-        for obstacle in self.obstacles:   
-            for i in range(4):
-                p.applyExternalForce(obstacle,
-                                    i,
-                                    forceObj=[0, 0, .06615],
-                                    posObj=[0, 0, 0],
-                                    flags=p.LINK_FRAME,
-                                    physicsClientId=self.CLIENT
-                                    )
-
-        return super()._physics(rpm, nth_drone)
     
     def _addObstacles(self):
         """Add obstacles to the environment.
@@ -156,6 +142,18 @@ class NavigationAviary(BaseSingleAgentAviary):
             self.obstacles.append(obstacle)
 
 
+    def _physics(self, rpm, nth_drone):
+        for obstacle in self.obstacles:   
+            for i in range(4):
+                p.applyExternalForce(obstacle,
+                                    i,
+                                    forceObj=[0, 0, .06615],
+                                    posObj=[0, 0, 0],
+                                    flags=p.LINK_FRAME,
+                                    physicsClientId=self.CLIENT
+                                    )
+
+        return super()._physics(rpm, nth_drone)
     ################################################################################
     
     def _computeReward(self):
@@ -211,15 +209,8 @@ class NavigationAviary(BaseSingleAgentAviary):
             heading_reward = -2 * heading_error
         R_heading = self.k6 * heading_reward 
 
-
-        R_total = R_hover + R_goal + R_crash + R_rot + R_wander + R_heading
-        if R_total == np.nan:
-            print("DANGER")
-            raise ValueError("Not good")
-        if R_total == np.inf or R_total == -np.inf:
-            print("Danger")
-            raise ValueError("Not Good")
-        return R_total
+        #R_goal = 
+        return R_hover + R_goal + R_crash + R_rot + R_wander + R_heading
 
     ################################################################################
     
@@ -248,7 +239,7 @@ class NavigationAviary(BaseSingleAgentAviary):
         return {"answer": 42} #### Calculated by the Deep Thought supercomputer in 7.5M years
 
     ################################################################################
-
+    
     def _clipAndNormalizeState(self,
                                state
                                ):

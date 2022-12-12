@@ -35,6 +35,7 @@ def perform_actions(env, actions):
         obs.append(ob)
         acs.append(ac)
         ob, rew, done, _ = env.step(ac)
+        env.render(mode="rgb_array")
         # add the observation after taking a step to next_obs
         next_obs.append(ob)
         rewards.append(rew)
@@ -64,11 +65,11 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
         if render:
             if 'rgb_array' in render_mode:
                 imgs.append(env.render())
-                #if hasattr(env.unwrapped, sim):
-                    # if 'track' in env.unwrapped.model.camera_names:
-                    #     imgs.append(env.unwrapped.sim.render(camera_name='track', height=500, width=500)[::-1])
-                    # else:
-                    #     imgs.append(env.unwrapped.sim.render(height=500, width=500)[::-1])
+                # if hasattr(env.unwrapped, sim):
+                #     if 'track' in env.unwrapped.model.camera_names:
+                #         imgs.append(env.unwrapped.sim.render(camera_name='track', height=500, width=500)[::-1])
+                #     else:
+                #         imgs.append(env.unwrapped.sim.render(height=500, width=500)[::-1])
 
             if 'human' in render_mode:
                 env.render(mode=render_mode)
@@ -79,6 +80,7 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
         act = act[0]
         acts.append(act)
         nobs, rew, done, _ = env.step(act)
+        env.render()
         nobses.append(nobs)
         rews.append(rew)
         obs = nobs.copy()
