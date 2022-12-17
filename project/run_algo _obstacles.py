@@ -30,6 +30,7 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common import results_plotter
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.noise import NormalActionNoise
 
 import ray
 from ray.tune import register_env
@@ -38,9 +39,16 @@ from matplotlib.pyplot import cm
 from matplotlib import pyplot as plt
 import os
 
+from navigation_aviary import NavigationAviary
+from gym.envs.registration import register
+
 from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.utils.utils import sync, str2bool
+
+# CEM Implementation
+from rob831.scripts.run_hw4_mb import MB_Trainer
+
 
 DEFAULT_RLLIB = False
 DEFAULT_GUI = True
@@ -98,9 +106,16 @@ def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, g
     log_dir = "tmp/"
     os.makedirs(log_dir, exist_ok=True)
 
+    # Register our custom environment
+    register(
+        id = "navigation-aviary-v0",
+        entry_point='navigation_aviary:NavigationAviary',
+    )
+
     # Create the gym environment
-    env = gym.make("takeoff-aviary-v0")
-    env = TakeoffAviary(record=True, gui = True)
+    env = gym.make("navigation-aviary-v0")
+    env = NavigationAviary(record=False, gui = False)
+    #env = NavigationAviary(record=True, gui = True)
     env = Monitor(env, log_dir)
 
     # Give some information about the observation and action space
@@ -114,7 +129,9 @@ def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, g
     callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
 
     # Number of training steps
-    train_steps = 2e5
+    train_steps = 5e5
+    action_noise = NormalActionNoise(np.array([0,0,0,0]), np.array([0.1, 0.1, 0.1, 0.1]))
+
 
     # Choose your algorithm
     if algo == "A2C":
@@ -122,45 +139,102 @@ def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, g
                     env,
                     verbose=1
                     )
-        model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
-        model.save("TakeoffAviary_A2C")
+        model.learn(total_timesteps=train_steps, \
+                    callback=callback) # Typically not enough
+        model.save("NavAviary_A2C")
     elif algo == "TD3":
-        model = TD3(MlpPolicyTD3, env)
-        model.learn(total_timesteps=train_steps) # Typically not enough
-        model.save("TakeoffAviary_TD3")
+        model = TD3(MlpPolicyTD3, env, action_noise=action_noise)
+        model.learn(total_timesteps=train_steps, callback = callback) # Typically not enough
+        model.save("NavAviary_TD3")
     elif algo == "PPO":
-        model = PPO(MlpPolicy, env)
-        model.learn(total_timesteps=train_steps) # Typically not enough
+        model = PPO("MlpPolicy", env)
+        model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
+        model.save("NavAviary_PPO")
     elif algo == "SAC":
         model = SAC("MlpPolicy", env)
         model.learn(total_timesteps=train_steps, callback=callback) # Typically not enough
+        model.save("NavAviary_SAC")
+    elif algo == "CEM":
+        # Set the parameters for CEM
+        agent_params = {}
+        agent_params["seed"]                          = 6969
+        agent_params["no_gpu"]                        = False
+        agent_params["which_gpu"]                     = 0
+        agent_params['video_log_freq']                = -1
+        agent_params['scalar_log_freq']               = 1
+        agent_params['save_params']                   = False
+        agent_params["env_name"]                      = "navigation-aviary-v0"
+        agent_params["exp_name"]                      = "MB_Exp"
+        agent_params['n_iter']                        = 20#train_steps
+        agent_params['batch_size']                    = 5000
+        agent_params['batch_size_initial']            = 5000
+        agent_params['train_batch_size']              = 512
+        agent_params['eval_batch_size']               = 400
+        agent_params['ac_dim']                        = env.action_space.shape
+        agent_params['ob_dim']                        = env.observation_space.shape
+        agent_params['n_layers']                      = 2
+        agent_params['mpc_horizon']                   = 15
+        agent_params['ensemble_size']                 = 5
+        agent_params['size']                          = 250
+        agent_params['ep_len']                        = 500
+        agent_params['num_agent_train_steps_per_iter']= 1500
+        agent_params['mpc_action_sampling_strategy']  = "cem"
+        agent_params['mpc_num_action_sequences']      = 1000
+        agent_params['cem_iterations']                = 4
+        agent_params['cem_num_elites']                = 8
+        agent_params['cem_alpha']                     = 1.0
+        agent_params['learning_rate']                 = 1e-3
+        agent_params['add_sl_noise']                  = True
 
-    # # Plot results
-    # results_plotter.plot_results([log_dir], train_steps, results_plotter.X_TIMESTEPS, algo)
-    # plt.show()
+        # Setup log directory
+        logdir_prefix = "results"
+
+        data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+
+        if not (os.path.exists(data_path)):
+            os.makedirs(data_path)
+
+        
+        logdir = logdir_prefix + agent_params["exp_name"] + '_' + agent_params["env_name"] + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+        logdir = os.path.join(data_path, logdir)
+        agent_params['logdir'] = logdir
+        if not(os.path.exists(logdir)):
+            os.makedirs(logdir)
+        print("\n\n\nLOGGING TO: ", logdir, "\n\n\n")
+
+        # Setup the Model Based Training to Run!
+        model = MB_Trainer(agent_params)
+        model.run_training_loop()
+
+    # Plot results
+    results_plotter.plot_results([log_dir], train_steps, results_plotter.X_TIMESTEPS, algo)
+    plt.show()
 
 
-    # # Evaluate the policy of interest
-    # mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=100)
-    # print(f"Mean Reward: {mean_reward}")
-    # print(f"Std Reward: {std_reward}")
+    # Evaluate the policy of interest
+    mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=100)
+    print(f"Mean Reward: {mean_reward}")
+    print(f"Std Reward: {std_reward}")
 
-    model = SAC.load()
+    # if algo == "SAC":
+    #     model = SAC.load("results/SAC_model.zip")
 
     # Run the model in simulation
     obs = env.reset()
     rewards_all = {}
     rewards = []
     reward_traj = 0
-    for i in range(3*env.SIM_FREQ):
+    i = 0
+    while len(rewards_all) < 10:
         action, _states = model.predict(obs, deterministic=True)
         obs, reward, done, info = env.step(action)
         reward_traj += reward
         rewards.append(reward_traj)
         env.render()
-        if done or reward < -2:
+        if done:
             obs = env.reset()
             rewards_all[i] = rewards
+            i += 1
             rewards = []
             reward_traj = 0
     env.close()
@@ -176,27 +250,27 @@ def run(algo = "A2C", rllib=DEFAULT_RLLIB,output_folder=DEFAULT_OUTPUT_FOLDER, g
         traj = rewards_all[end_iter]
 
         # Plot
-        x = list(range(start_iter, int(end_iter) + 1))
+        x = list(range(len(traj)))
         plt.plot(x, traj[:], color = c, linestyle="dashed")
 
         start_iter  = int(end_iter) + 1
 
-    plt.title(f"Reward of a {algo} Agent - Takeoff")
+    plt.title(f"Reward of a {algo} Agent - Navigation")
     plt.xlabel("Iteration")
     plt.ylabel("Cumulative Reward")
     plt.legend()
-    plt.savefig(f"OneDrive - Personal/{algo}AgentPerformance.png")
+    plt.savefig(f"results/{algo}NavAgentPerformance.png")
 
 
 if __name__ == "__main__":
     #### Define and parse (optional) arguments for the script ##
-    parser = argparse.ArgumentParser(description='Single agent reinforcement learning example script using TakeoffAviary')
+    parser = argparse.ArgumentParser(description='Single agent reinforcement learning for navigating')
     parser.add_argument('--rllib',      default=DEFAULT_RLLIB,        type=str2bool,       help='Whether to use RLlib PPO in place of stable-baselines A2C (default: False)', metavar='')
     parser.add_argument('--gui',                default=DEFAULT_GUI,       type=str2bool,      help='Whether to use PyBullet GUI (default: True)', metavar='')
     parser.add_argument('--record_video',       default=DEFAULT_RECORD_VIDEO,      type=str2bool,      help='Whether to record a video (default: False)', metavar='')
     parser.add_argument('--output_folder',     default=DEFAULT_OUTPUT_FOLDER, type=str,           help='Folder where to save logs (default: "results")', metavar='')
     parser.add_argument('--colab',              default=DEFAULT_COLAB, type=bool,           help='Whether example is being run by a notebook (default: "False")', metavar='')
-    parser.add_argument("--algo", default="SAC", type=str)
+    parser.add_argument("--algo", default="CEM", type=str)
     ARGS = parser.parse_args()
 
     run(**vars(ARGS))

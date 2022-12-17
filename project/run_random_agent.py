@@ -2,6 +2,7 @@ import gym
 from gym_pybullet_drones.utils.Logger import Logger
 # from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from navigation_aviary import NavigationAviary
+from navigation_aviary_rgb import NavigationAviaryVision
 from stable_baselines3.common.env_checker import check_env
 
 import matplotlib.pyplot as plt
@@ -15,10 +16,17 @@ register(
     id = "navigation-aviary-v0",
     entry_point='navigation_aviary:NavigationAviary',
 )
+register(
+id = "vision-navigation-aviary-v0",
+entry_point='navigation_aviary_rgb:NavigationAviaryVision',
+)
 
 # Create the gym environment
 env = gym.make("navigation-aviary-v0")
 env = NavigationAviary(record=True, gui = True)
+
+# env = gym.make("vision-navigation-aviary-v0") 
+# env = NavigationAviaryVision(record=True, gui = True, num_obstacles=6)
 
 print("[INFO] Action space:", env.action_space)
 print("[INFO] Observation space:", env.observation_space)
@@ -26,11 +34,15 @@ check_env(env,
             warn=True,
             skip_render_check=True
             )
+
+# Run the random agent in simulation
 obs = env.reset()
 rewards_all = {}
 rewards = []
 reward_traj = 0
-for i in range(10*240):
+i = 0
+
+while len(rewards_all) < 10:
     obs, reward, done, info = env.step(env.action_space.sample())
     reward_traj += reward
     rewards.append(reward_traj)
@@ -38,6 +50,7 @@ for i in range(10*240):
     if done:
         obs = env.reset()
         rewards_all[i] = rewards
+        i += 1
         rewards = []
         reward_traj = 0
 env.close()
@@ -53,12 +66,13 @@ for end_iter in rewards_all:
     traj = rewards_all[end_iter]
 
     # Plot
-    x = list(range(start_iter, int(end_iter) + 1))
+    x = list(range(len(traj)))
     plt.plot(x, traj[:], color = c, linestyle="dashed")
 
     start_iter  = int(end_iter) + 1
 
-plt.title("Reward of a Random Agent - Navigation")
+plt.title(f"Reward of a Random Agent - Navigation")
 plt.xlabel("Iteration")
 plt.ylabel("Cumulative Reward")
-plt.savefig("results/RandomAgentPerformance_Navigation.png")
+plt.legend()
+plt.savefig(f"results/Random NavAgentPerformance.png")
